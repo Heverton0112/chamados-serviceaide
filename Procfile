@@ -1,1 +1,1 @@
-web: gunicorn chamados_serviceaide:app
+web: python chamados_serviceaide.py
