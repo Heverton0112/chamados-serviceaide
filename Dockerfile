@@ -1,14 +1,12 @@
 FROM python:3.10-slim
 
-# Evitar prompts durante instalação
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Diretório de trabalho
 WORKDIR /app
 
-# Instala dependências do sistema
+# Etapa 1: Instala ferramentas necessárias e remove pacotes conflitantes
 RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
@@ -17,34 +15,35 @@ RUN apt-get update && apt-get install -y \
     apt-transport-https \
     gcc \
     g++ \
-    unixodbc \
-    unixodbc-dev \
-    libpq-dev \
-    libsqlite3-dev \
-    libssl-dev \
     libffi-dev \
+    libssl-dev \
     libsasl2-dev \
     libldap2-dev \
-    libodbc1 \
+    && apt-get remove -y unixodbc libodbc1 libodbcinst2 unixodbc-dev || true \
     && rm -rf /var/lib/apt/lists/*
 
-# Adiciona o repositório da Microsoft de forma moderna (sem apt-key)
+# Etapa 2: Adiciona repositório da Microsoft (forma segura)
 RUN mkdir -p /etc/apt/keyrings \
     && curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/keyrings/microsoft.gpg \
-    && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/debian/11/prod bullseye main" > /etc/apt/sources.list.d/mssql-release.list \
-    && apt-get update \
-    && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
+    && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/debian/11/prod bullseye main" > /etc/apt/sources.list.d/mssql-release.list
+
+# Etapa 3: Instala somente os drivers da Microsoft (sem conflitos)
+RUN apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y \
+        msodbcsql17 \
+        unixodbc \
+        unixodbc-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia os arquivos da aplicação
+# Copia o projeto
 COPY . /app
 
 # Instala dependências Python
 RUN pip install --upgrade pip
 RUN pip install flask pyodbc gunicorn
 
-# Expor a porta usada pela aplicação
+# Porta do app
 EXPOSE 5000
 
-# Comando padrão ao iniciar o container
+# Start do app
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "chamados_serviceaide:application"]
