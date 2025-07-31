@@ -1,19 +1,22 @@
-# Use the official Python image as base
 FROM python:3.10-slim
 
-# Set environment variables
+# Evitar prompts durante instalação
+ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Set working directory
+# Diretório de trabalho
 WORKDIR /app
 
-# Install system dependencies for pyodbc and SQL Server ODBC driver
+# Instala dependências do sistema
 RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    gpg \
+    ca-certificates \
+    apt-transport-https \
     gcc \
     g++ \
-    gnupg \
-    curl \
     unixodbc \
     unixodbc-dev \
     libpq-dev \
@@ -23,26 +26,25 @@ RUN apt-get update && apt-get install -y \
     libsasl2-dev \
     libldap2-dev \
     libodbc1 \
-    apt-transport-https \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Microsoft ODBC Driver 17 for SQL Server (for Debian bullseye)
-RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg \
-    && echo "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/microsoft.gpg] https://packages.microsoft.com/debian/11/prod bullseye main" > /etc/apt/sources.list.d/mssql-release.list \
+# Adiciona o repositório da Microsoft de forma moderna (sem apt-key)
+RUN mkdir -p /etc/apt/keyrings \
+    && curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/keyrings/microsoft.gpg \
+    && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/debian/11/prod bullseye main" > /etc/apt/sources.list.d/mssql-release.list \
     && apt-get update \
     && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy project files
+# Copia os arquivos da aplicação
 COPY . /app
 
-# Install Python dependencies
+# Instala dependências Python
 RUN pip install --upgrade pip
 RUN pip install flask pyodbc gunicorn
 
-# Expose port
+# Expor a porta usada pela aplicação
 EXPOSE 5000
 
-# Command to run the application using gunicorn
+# Comando padrão ao iniciar o container
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "chamados_serviceaide:application"]
-
