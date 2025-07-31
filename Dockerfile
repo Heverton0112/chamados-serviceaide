@@ -1,4 +1,3 @@
-
 # Use the official Python image as base
 FROM python:3.10-slim
 
@@ -24,11 +23,12 @@ RUN apt-get update && apt-get install -y \
     libsasl2-dev \
     libldap2-dev \
     libodbc1 \
+    apt-transport-https \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Microsoft ODBC Driver 17 for SQL Server
+# Install Microsoft ODBC Driver 17 for SQL Server (for Debian bullseye)
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-    && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && curl https://packages.microsoft.com/config/debian/bullseye/prod.list > /etc/apt/sources.list.d/mssql-release.list \
     && apt-get update \
     && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
     && rm -rf /var/lib/apt/lists/*
@@ -45,3 +45,4 @@ EXPOSE 5000
 
 # Command to run the application using gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "chamados_serviceaide:application"]
+
