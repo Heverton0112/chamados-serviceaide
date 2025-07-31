@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Chamados Serviceaide</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h2>Chamados Serviceaide</h2>
+
+    <!-- Formulário de pesquisa -->
+    <form method="POST" action="/" id="searchForm">
+        <label for="ticketInput">Pesquisar por Ticket:</label>
+        <input type="text" name="ticket" id="ticketInput">
+
+        <label for="nomeInput">ou Nome:</label>
+        <input type="text" name="nome" id="nomeInput">
+
+        <button type="submit">Pesquisar</button>
+        <button type="button" onclick="limparFormulario()">Limpar</button>
+    </form>
+
+    <!-- Lista de tickets encontrados por nome -->
+    {% if tickets_encontrados %}
+        <h3>Tickets encontrados:</h3>
+        <form method="POST" action="/">
+            <select name="ticket" onchange="this.form.submit()">
+                <option value="">Selecione um ticket</option>
+                {% for t in tickets_encontrados %}
+                    <option value="{{ t.ticket_id }}">
+                        [{{ t.ticket_id }}] - {{ t.nome }} - {{ t.data_abertura }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    {% endif %}
+
+    <!-- Exibição dos dados do ticket -->
+    {% if dados_ticket %}
+        <p><strong>Solicitante:</strong> {{ dados_ticket.solicitante }}</p>
+        <p><strong>Data Abertura:</strong> {{ dados_ticket.data_abertura }}</p>
+        <p><strong>Descrição:</strong></p>
+        <textarea readonly>{{ dados_ticket.descricao }}</textarea>
+    {% endif %}
+
+    <!-- Tabela de logs com rolagem horizontal e vertical -->
+    {% if logs %}
+        <div style="overflow-x: auto; width: 100%;">
+            <div style="max-height: 300px; overflow-y: auto; min-width: 600px; border: 1px solid #ccc; margin-top: 20px;">
+                <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 120px; resize: horizontal; overflow: auto;">Ticket</th>
+                            <th style="min-width: 200px; resize: horizontal; overflow: auto;">Descrição Log</th>
+                            <th style="min-width: 150px; resize: horizontal; overflow: auto;">Data Log</th>
+                            <th style="min-width: 150px; resize: horizontal; overflow: auto;">Usuário Log</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.ticket }}</td>
+                            <td>{{ log.descricao_log }}</td>
+                            <td>{{ log.data_log }}</td>
+                            <td>{{ log.usuario_log }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+
+    <script>
+    function limparFormulario() {
+        document.getElementById('ticketInput').value = '';
+        document.getElementById('nomeInput').value = '';
+        document.getElementById('ticketInput').focus();
+        window.location.href = '/';
+    }
+    </script>
+</body>
+</html>
