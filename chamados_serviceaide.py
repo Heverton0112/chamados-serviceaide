@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request
 import pyodbc
 
-app = Flask(__name__)
+app = Flask(chamados_serviceaide)
 
 # 🔐 Conexão com SQL Server
 conn_str = (
