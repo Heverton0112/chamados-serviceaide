@@ -2,11 +2,11 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Chamados Serviceaide</title>
+    <title>Chamados ServiceAide</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h2>Chamados Serviceaide</h2>
+    <h2>Chamados ServiceAide</h2>
 
     <!-- Formulário de pesquisa -->
     <form method="POST" action="/" id="searchForm">
@@ -14,7 +14,8 @@
         <input type="text" name="ticket" id="ticketInput">
 
         <label for="nomeInput">ou Nome:</label>
-        <input type="text" name="nome" id="nomeInput">
+        <input type="text" name="nome" id="nomeInput" list="sugestoes-nome" oninput="buscarSugestoesNome()">
+        <datalist id="sugestoes-nome"></datalist>
 
         <button type="submit">Pesquisar</button>
         <button type="button" onclick="limparFormulario()">Limpar</button>
@@ -38,38 +39,52 @@
     <!-- Exibição dos dados do ticket -->
     {% if dados_ticket %}
         <p><strong>Solicitante:</strong> {{ dados_ticket.solicitante }}</p>
-        <p><strong>Data Abertura:</strong> {{ dados_ticket.data_abertura }}</p>
+<p>
+    <strong>Data Abertura:</strong> {{ dados_ticket.data_abertura }} &nbsp;&nbsp;
+    <strong>Data Resolução:</strong> {{ dados_ticket.data_resolucao }}
+</p>
+<div class="caixas-lado-a-lado">
+    <div class="caixa-individual">
         <p><strong>Descrição:</strong></p>
         <textarea readonly>{{ dados_ticket.descricao }}</textarea>
+    </div>
+    <div class="caixa-individual">
+        <p><strong>Resolução:</strong></p>
+        <textarea readonly>{{ dados_ticket.resolucao }}</textarea>
+    </div>
+</div>
     {% endif %}
 
-    <!-- Tabela de logs com rolagem horizontal e vertical -->
-    {% if logs %}
-        <div style="overflow-x: auto; width: 100%;">
-            <div style="max-height: 300px; overflow-y: auto; min-width: 600px; border: 1px solid #ccc; margin-top: 20px;">
-                <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
-                    <thead>
-                        <tr>
-                            <th style="min-width: 120px; resize: horizontal; overflow: auto;">Ticket</th>
-                            <th style="min-width: 200px; resize: horizontal; overflow: auto;">Descrição Log</th>
-                            <th style="min-width: 150px; resize: horizontal; overflow: auto;">Data Log</th>
-                            <th style="min-width: 150px; resize: horizontal; overflow: auto;">Usuário Log</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for log in logs %}
-                        <tr>
-                            <td>{{ log.ticket }}</td>
-                            <td>{{ log.descricao_log }}</td>
-                            <td>{{ log.data_log }}</td>
-                            <td>{{ log.usuario_log }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+   <!-- Tabela de logs com rolagem horizontal e vertical -->
+{% if logs %}
+    <div style="overflow-x: auto; width: 100%;">
+        <div style="max-height: 300px; overflow-y: auto; min-width: 600px; border: 1px solid #ccc; margin-top: 20px;">
+            <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                <thead>
+                    <tr>
+                        <th style="min-width: 120px; resize: horizontal; overflow: auto;">Ticket</th>
+                        <th style="min-width: 200px; resize: horizontal; overflow: auto;">Descrição Log</th>
+                        <th style="min-width: 150px; resize: horizontal; overflow: auto;">Data Log</th>
+                        <th style="min-width: 150px; resize: horizontal; overflow: auto;">Usuário Log</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.ticket }}</td>
+                        <td onclick='mostrarDescricao({{ log.descricao_log | tojson })'
+                            style="cursor: pointer; color: blue; text-decoration: underline;">
+                            {{ log.descricao_log[:60] }}...
+                        </td>
+                        <td>{{ log.data_log }}</td>
+                        <td>{{ log.usuario_log }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-    {% endif %}
+    </div>
+{% endif %}
 
     <script>
     function limparFormulario() {
@@ -79,5 +94,53 @@
         window.location.href = '/';
     }
     </script>
+
+    <!-- Modal para descrição -->
+<div id="modalDescricao" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close" onclick="fecharModal()">&times;</span>
+        <pre id="descricaoCompleta"></pre>
+    </div>
+</div>
+
+<script>
+function mostrarDescricao(texto) {
+    document.getElementById('descricaoCompleta').textContent = texto;
+    document.getElementById('modalDescricao').style.display = 'block';
+}
+
+function fecharModal() {
+    document.getElementById('modalDescricao').style.display = 'none';
+}
+
+// Fecha modal ao clicar fora dele
+window.onclick = function(event) {
+    const modal = document.getElementById('modalDescricao');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+}
+</script>
+
+<script>
+function buscarSugestoesNome() {
+    const termo = document.getElementById('nomeInput').value;
+    const datalist = document.getElementById('sugestoes-nome');
+
+    if (termo.length < 2) return;  // Evita consultas muito curtas
+
+    fetch(`/autocomplete?termo=${encodeURIComponent(termo)}`)
+        .then(response => response.json())
+        .then(data => {
+            datalist.innerHTML = '';
+            data.nomes.forEach(nome => {
+                const option = document.createElement('option');
+                option.value = nome;
+                datalist.appendChild(option);
+            });
+        });
+}
+</script>
+
 </body>
 </html>
